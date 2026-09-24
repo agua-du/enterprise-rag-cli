@@ -1,0 +1,13 @@
+{
+    "name": "smoke-5k-v1",
+    "dataset": "EnterpriseRAG-Bench",
+    "release": "Dataset v1.0.0",
+    "document_count": 5000,
+    "archives": [
+        {
+            "file": "fireflies_slice_0001.zip",
+            "source_type": "fireflies",
+            "sha256": "799e856058d1e92301bcbfc01fb903f16463092bfc9c42b3e9144db6fe742707"
+        }
+    ]
+}

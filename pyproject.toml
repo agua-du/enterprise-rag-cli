@@ -1,0 +1,21 @@
+[project]
+name = "enterprise-rag-cli"
+version = "0.1.0"
+description = "A benchmark-driven enterprise RAG CLI"
+readme = "README.md"
+authors = [
+    { name = "modonglin", email = "donglin.mo@oceanbluecloud.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "polars>=1.44.2",
+    "rich>=15.0.0",
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+rag = "enterprise_rag_cli.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
