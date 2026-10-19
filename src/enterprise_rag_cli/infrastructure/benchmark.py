@@ -10,18 +10,11 @@ from typing import Any
 import polars as pl
 
 
-DOCUMENT_ID_PATTERN = re.compile(r"^(dsid_[0-9a-f]+)")
+from enterprise_rag_cli.infrastructure.documents import (
+    extract_source_id,
+    file_sha256,
+)
 
-# 文件hash
-def file_sha256(path:Path)->str:
-    digest = hashlib.sha256()
-    with open(path,"rb") as file:
-        while True:
-            data = file.read(1024*1024)
-            if not data:
-                break
-            digest.update(data)
-    return digest.hexdigest()
 
 # 读取questions.jsonl返回每行的 json
 def iter_jsonl(path: Path) -> Iterator[dict[str, Any]]:
@@ -79,10 +72,6 @@ def load_questions(path: Path) -> pl.DataFrame:
 
     return pl.DataFrame(rows)
 
-#使用正则截取文件名中 dsid_[0-9a-f]这段作为文档id
-def extract_document_id(path: Path) -> str | None:
-    match = DOCUMENT_ID_PATTERN.match(path.name)
-    return match.group(1) if match else None
 
 # 扫描文档目录，生成字典[文档 id,文件问题类型，文件大小字节数]
 def scan_documents(root: Path) -> pl.DataFrame:
@@ -92,7 +81,7 @@ def scan_documents(root: Path) -> pl.DataFrame:
         #documents 目录下面文件夹的名称为source_type
         relative = path.relative_to(root)
         source_type = relative.parts[0] if len(relative.parts) > 1 else "unknown"
-        document_id = extract_document_id(path)
+        document_id = extract_source_id(path)
 
         rows.append(
             {
