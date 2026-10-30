@@ -1,0 +1,10 @@
+问题：
+{{ question }}
+
+证据：
+{% for item in evidence %}
+[{{ item.rank }}]
+来源：{{ item.source_type }}/{{ item.source_id }}
+内容：{{ item.text }}
+
+{% endfor %}

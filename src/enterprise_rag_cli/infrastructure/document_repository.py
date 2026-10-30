@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Literal
+from collections.abc import Iterator
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -137,3 +138,79 @@ def summarize_imports(session: Session) -> list[ImportSummary]:
         )
         for source_type, parsed, failed in session.execute(statement)
     ]
+
+# 从数据库中读取文档
+def load_parsed_documents(
+    session: Session,
+    limit: int | None = None,
+) -> list[Document]:
+    '''
+    SQL语句：
+    select * from documents
+    where status = 'parsed' and text is not null
+    order by document_id ASC
+    limit 100
+    '''
+    statement = (
+        select(DocumentRecord)
+        .where(
+            DocumentRecord.status == "parsed",
+            DocumentRecord.text.is_not(None),
+        )
+        .order_by(DocumentRecord.document_id)
+    )
+
+    if limit is not None:
+        statement = statement.limit(limit)
+
+    # session.execute() 返回 Result 对象，每行通常一个 ROW
+    # session.scalars() 返回 ScalarResult 对象，可以直接获取每行的第一个元素
+    records = session.scalars(statement).all()
+    return [
+        Document(
+            document_id=record.document_id,
+            source_type=record.source_type,
+            source_id=record.source_id,
+            title=record.title,
+            text=record.text,
+            content_sha256=record.content_sha256,
+        )
+        for record in records
+    ]
+
+# 统计 parsed 的文档数量
+def count_parsed_documents(session: Session) -> int:
+    statement = (
+        select(func.count())
+        .select_from(DocumentRecord)
+        .where(
+            DocumentRecord.status == "parsed",
+            DocumentRecord.text.is_not(None),
+        )
+    )
+    return session.scalar(statement) or 0
+
+# 分批从数据库中读取文档（大量数据时使用）
+def iter_parsed_documents(
+    session: Session,
+    page_size: int,
+) -> Iterator[Document]:
+    statement = (
+        select(DocumentRecord)
+        .where(
+            DocumentRecord.status == "parsed",
+            DocumentRecord.text.is_not(None),
+        )
+        .order_by(DocumentRecord.document_id)
+        .execution_options(yield_per=page_size)
+    )
+
+    for record in session.scalars(statement):
+        yield Document(
+            document_id=record.document_id,
+            source_type=record.source_type,
+            source_id=record.source_id,
+            title=record.title,
+            text=record.text,
+            content_sha256=record.content_sha256,
+        )

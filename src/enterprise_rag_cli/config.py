@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
-        validate_defaults=True,
+        validate_default=True,
     )
 
     environment: Literal["development", "test", "production"] = "development"
@@ -27,8 +27,40 @@ class Settings(BaseSettings):
     postgres_password: SecretStr = SecretStr("rag-local-only")
     postgres_database: str = "enterprise_rag"
 
-    opensearch_url: AnyHttpUrl = AnyHttpUrl("http://localhost:9200")
-    request_timeout_seconds: float = Field(default=5.0, ge=0, le=60)
+    chunk_size:int = Field(default=1200,ge=200)
+    chunk_overlap:int = Field(default=150,ge=0)
+
+    dashscope_api_key: SecretStr | None = None
+    dashscope_base_http_api_url: AnyHttpUrl
+
+    embedding_model: str = "qwen3.7-text-embedding-flash"
+    embedding_dimensions: int = 1024
+    embedding_batch_size: int = Field(default=20, ge=1, le=20)
+
+    milvus_uri: str = "http://localhost:19530"
+    milvus_collection: str = "document_chunks"
+
+    dashscope_compatible_base_url: AnyHttpUrl
+
+    # 全量索引按页读取文档，避免一次加载整个文档库。
+    full_index_document_page_size: int = Field(default=500, ge=1)
+
+    # 单个分片主动低于百炼的 50,000 条请求和 500 MB 上限。
+    batch_shard_max_requests: int = Field(default=5000, ge=1, le=50_000)
+    batch_shard_max_bytes: int = Field(
+        default=400_000_000,
+        ge=1,
+        le=500_000_000,
+    )
+
+    # 从结果文件读取向量后，按较小批次写入 Milvus。
+    milvus_write_batch_size: int = Field(default=500, ge=1)
+
+    # 生成答案的模型
+    generation_model: str = "qwen3.8-flash"
+    # 默认Milvus召回最大数量
+    default_top_k: int = Field(default=5, ge=1, le=20)
+
 
 #缓存修饰器
 @lru_cache(maxsize=1)

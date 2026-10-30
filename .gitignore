@@ -14,3 +14,4 @@ data/
 
 # Virtual environments
 .venv
+/reports/

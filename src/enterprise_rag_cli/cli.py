@@ -5,7 +5,8 @@ import typer
 from enterprise_rag_cli.commands.dataset import app as dataset_app
 from enterprise_rag_cli.commands.version import show_version
 from enterprise_rag_cli.commands.ingest import ingest
-
+from enterprise_rag_cli.commands.index import app as index_app
+from enterprise_rag_cli.commands.chat import chat
 
 app = typer.Typer(
     name="rag",
@@ -21,6 +22,12 @@ app.add_typer(
 app.command("version")(show_version)
 app.command("ingest")(ingest)
 
+app.add_typer(
+    index_app,
+    name="index",
+    help="建立和管理检索索引"
+)
+app.command("chat")(chat)
 
 if __name__ == "__main__":
     app()
