@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     # 默认Milvus召回最大数量
     default_top_k: int = Field(default=5, ge=1, le=20)
 
+    #裁判模型
+    judge_model: str = "qwen3.8-flash"
+
 
 #缓存修饰器
 @lru_cache(maxsize=1)

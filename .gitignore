@@ -11,6 +11,8 @@ data/
 .env
 .pytest_cache/
 .ruff_cache/
+benchmark/suites/
+tools/
 
 # Virtual environments
 .venv

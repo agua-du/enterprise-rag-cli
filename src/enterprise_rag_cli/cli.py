@@ -7,6 +7,7 @@ from enterprise_rag_cli.commands.version import show_version
 from enterprise_rag_cli.commands.ingest import ingest
 from enterprise_rag_cli.commands.index import app as index_app
 from enterprise_rag_cli.commands.chat import chat
+from enterprise_rag_cli.commands.benchmark import app as benchmark_app
 
 app = typer.Typer(
     name="rag",
@@ -28,6 +29,7 @@ app.add_typer(
     help="建立和管理检索索引"
 )
 app.command("chat")(chat)
+app.add_typer(benchmark_app, name="benchmark", help="评测与结果分析")
 
 if __name__ == "__main__":
     app()

@@ -169,3 +169,38 @@ def search_chunks(
         )
         for rank, hit in enumerate(hits, start=1)
     ]
+
+# 收集 Milvus 中的所有 source_id
+def collect_index_document_ids(settings: Settings) -> tuple[str, set[str]]:
+    client = create_milvus_client(settings)
+    try:
+        # 获取数据库中已存在的 Alias 名称列表
+        aliases = client.list_aliases()["aliases"]
+        if settings.milvus_collection not in aliases:
+            raise RuntimeError("请先完成 Batch 全量索引构建并启用索引")
+
+        # 查询 Alias 当前指向的Collection名称
+        collection = client.describe_alias(
+            alias=settings.milvus_collection,
+        )["collection_name"]
+        # 将查询所需数据和索引加载到查询节点
+        client.load_collection(collection_name=collection)
+        # 分批查询
+        iterator = client.query_iterator(
+            collection_name=collection,
+            filter="",
+            output_fields=["source_id"],
+            batch_size=1000,
+            consistency_level="Strong",
+        )
+        # 使用set去重
+        document_ids: set[str] = set()
+        try:
+            while rows := iterator.next():
+                document_ids.update(row["source_id"] for row in rows)
+        finally:
+            iterator.close()
+
+        return collection, document_ids
+    finally:
+        client.close()
