@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from enterprise_rag_cli.domain.models import Document, SourceDocument
 from enterprise_rag_cli.infrastructure.tables import DocumentRecord
+from enterprise_rag_cli.domain.ids import make_document_id
 
 
 ImportAction = Literal["created", "updated", "unchanged"]
@@ -214,3 +215,23 @@ def iter_parsed_documents(
             text=record.text,
             content_sha256=record.content_sha256,
         )
+
+# 读取文档
+def load_parsed_document(
+    session: Session,
+    source_type: str,
+    source_id: str,
+) -> Document:
+    document_id = make_document_id(source_type, source_id)
+    record = session.get(DocumentRecord, document_id)
+    if record is None or record.status != "parsed" or not record.text:
+        raise ValueError(f"找不到已成功导入的文档：{source_type}/{source_id}")
+
+    return Document(
+        document_id=record.document_id,
+        source_type=record.source_type,
+        source_id=record.source_id,
+        title=record.title,
+        text=record.text,
+        content_sha256=record.content_sha256,
+    )

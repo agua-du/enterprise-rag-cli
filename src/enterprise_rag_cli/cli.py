@@ -8,6 +8,8 @@ from enterprise_rag_cli.commands.ingest import ingest
 from enterprise_rag_cli.commands.index import app as index_app
 from enterprise_rag_cli.commands.chat import chat
 from enterprise_rag_cli.commands.benchmark import app as benchmark_app
+from enterprise_rag_cli.commands.chunks import app as chunks_app
+
 
 app = typer.Typer(
     name="rag",
@@ -30,6 +32,7 @@ app.add_typer(
 )
 app.command("chat")(chat)
 app.add_typer(benchmark_app, name="benchmark", help="评测与结果分析")
+app.add_typer(chunks_app, name="chunks", help="文档切分与预览")
 
 if __name__ == "__main__":
     app()
