@@ -21,6 +21,15 @@ def write_json(path: Path, value: Any) -> None:
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+# 读取切分方式
+def read_index_chunk_policies(settings: Settings, collection: str) -> dict | None:
+    jobs_dir = settings.reports_dir / "index-jobs"
+    for path in sorted(jobs_dir.glob("*/manifest.json")):
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        if manifest.get("collection_name") == collection:
+            return manifest.get("chunk_policies")
+    raise ValueError(f"找不到索引任务记录：{collection}，请保留 reports/index-jobs")
+
 
 # benchmark 准备工作
 def prepare_benchmark(settings: Settings, output_dir: Path) -> dict:
@@ -64,6 +73,7 @@ def prepare_benchmark(settings: Settings, output_dir: Path) -> dict:
         "question_count": len(questions),
         "questions_sha256": file_sha256(questions_path),
     }
+    suite["chunk_policies"] = read_index_chunk_policies(settings, collection)
     write_json(output_dir / "suite.json", suite)
     return suite
 
@@ -131,8 +141,7 @@ def run_benchmark(
         "embedding_model": settings.embedding_model,
         "embedding_dimensions": settings.embedding_dimensions,
         "generation_model": settings.generation_model,
-        "chunk_size": settings.chunk_size,
-        "chunk_overlap": settings.chunk_overlap,
+        "chunk_policies": suite.get("chunk_policies"),
         "code_sha256": code_sha256(),
         "completed": False,
         "errors": 0,

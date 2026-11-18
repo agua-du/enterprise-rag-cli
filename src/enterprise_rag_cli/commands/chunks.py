@@ -10,6 +10,8 @@ from enterprise_rag_cli.config import get_settings
 from enterprise_rag_cli.infrastructure.database import create_session_factory
 from enterprise_rag_cli.infrastructure.document_repository import load_parsed_document
 from enterprise_rag_cli.presentation import console
+from enterprise_rag_cli.application.chunk_policies import load_chunk_policies, split_with_policy
+from enterprise_rag_cli.domain.models import ChunkPolicy
 
 class ChunkStrategy(str, Enum):
     token = "token"
@@ -28,7 +30,7 @@ def preview(
     overlap: int | None = typer.Option(None, "--overlap", min=0),
     contains: str | None = typer.Option(None, "--contains", help="只显示包含指定文字的片段"),
     limit: int = typer.Option(3, "--limit", min=1, max=20),
-    strategy: ChunkStrategy = typer.Option(ChunkStrategy.token, "--strategy"),
+    strategy: ChunkStrategy | None = typer.Option(None, "--strategy"),
 ) -> None:
     """读取一篇文档并预览 Chunk。"""
     settings = get_settings()
@@ -37,10 +39,20 @@ def preview(
         document = load_parsed_document(session, source, source_id)
 
     # 分割
-    actual_size = settings.chunk_size if size is None else size
-    actual_overlap = settings.chunk_overlap if overlap is None else overlap
-    chunker = create_chunker(actual_size, actual_overlap, strategy.value)
-    chunks = split_document(document, chunker)
+    policies = load_chunk_policies(settings.chunk_policies_path)
+    policy = policies.get(document.source_type, policies["default"])
+    overrides = {}
+    if size is not None:
+        overrides["chunk_size"] = size
+    if overlap is not None:
+        overrides["chunk_overlap"] = overlap
+    if strategy is not None:
+        overrides["strategy"] = strategy.value
+        overrides["structure"] = "paragraph"
+    policy = ChunkPolicy.model_validate({**policy.model_dump(), **overrides})
+    chunks = split_with_policy(document, policy)
+    console.print(f"切分规则：{policy.model_dump()}")
+
     selected = [
         chunk for chunk in chunks
         if contains is None or contains.casefold() in chunk.text.casefold()

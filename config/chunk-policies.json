@@ -1,0 +1,16 @@
+{
+    "default": {
+        "strategy": "recursive",
+        "chunk_size": 1200,
+        "chunk_overlap": 0,
+        "structure": "paragraph",
+        "include_title": false
+    },
+    "fireflies": {
+        "strategy": "recursive",
+        "chunk_size": 1200,
+        "chunk_overlap": 0,
+        "structure": "meeting",
+        "include_title": false
+    }
+}

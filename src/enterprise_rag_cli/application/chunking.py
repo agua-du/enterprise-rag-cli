@@ -31,6 +31,7 @@ def create_chunker(
     chunk_size: int,
     chunk_overlap: int,
     strategy: str = "token",
+    rules: RecursiveRules | None = None,
 ) -> BaseChunker:
     if chunk_size < 1 or chunk_overlap < 0 or chunk_overlap >= chunk_size:
         raise ValueError("长度必须为正数，重叠长度必须在 0 到切分长度之间")
@@ -52,16 +53,21 @@ def create_chunker(
             raise ValueError("本节的递归切分不使用重叠，请将 overlap 设为 0")
         return RecursiveChunker(
             tokenizer="character", chunk_size=chunk_size,
-            rules=paragraph_rules(), min_characters_per_chunk=1,
+            rules=rules if rules is not None else paragraph_rules(), min_characters_per_chunk=1,
         )
     raise ValueError(f"不支持的切分方式：{strategy}")
 
 
 # 执行切分
-def split_document(document: Document, chunker: BaseChunker) -> list[Chunk]:
+def split_document(
+    document: Document,
+    chunker: BaseChunker,
+    include_title: bool = False,
+) -> list[Chunk]:
     fallback = TokenChunker(
         tokenizer="character", chunk_size=chunker.chunk_size, chunk_overlap=0,
     )
+    title = " ".join((document.title or "").split())[:120]
     chunks = []
     for raw_chunk in chunker.chunk(document.text):
         # 一条很长的句子也可能超过上限，继续按长度拆开。
@@ -73,6 +79,8 @@ def split_document(document: Document, chunker: BaseChunker) -> list[Chunk]:
             text = piece.text
             if not text.strip():
                 continue
+            if include_title and title and not text.lstrip().startswith(title):
+                text = f"{title}\n\n{text}"
             if len(text.encode("utf-8")) > 8192:
                 raise ValueError("Chunk 超过 Milvus 正文字段的 8192 字节上限，请减小切分长度")
             position = len(chunks)
@@ -86,3 +94,10 @@ def split_document(document: Document, chunker: BaseChunker) -> list[Chunk]:
                 token_count=len(text),
             ))
     return chunks
+
+# 定义「会议记录」的分层规则
+def meeting_rules() -> RecursiveRules:
+    return RecursiveRules(levels=[
+        RecursiveLevel(delimiters=["\n["], include_delim="next"),
+        *paragraph_rules().levels,
+    ])

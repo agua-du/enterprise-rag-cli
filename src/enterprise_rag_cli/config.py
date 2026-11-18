@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     #裁判模型
     judge_model: str = "qwen3.8-flash"
 
+    chunk_policies_path: Path = Path("config/chunk-policies.json")
+
+
 
 #缓存修饰器
 @lru_cache(maxsize=1)

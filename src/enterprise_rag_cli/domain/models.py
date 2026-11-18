@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-
-from pydantic import BaseModel, Field
+from typing import Literal
+from pydantic import BaseModel, Field,ConfigDict, model_validator
 
 #待处理的文件
 class SourceDocument(BaseModel):
@@ -66,3 +66,25 @@ class RagAnswer(BaseModel):
     question: str = Field(min_length=1)
     answer: str = Field(min_length=1)
     evidence: list[RetrievalResult]
+
+# 分割策略
+class ChunkPolicy(BaseModel):
+    # 输入数据中如果出现模型未声明的字段，直接报错
+    model_config = ConfigDict(extra="forbid")
+
+    strategy: Literal["token", "sentence", "recursive"] = "token"
+    chunk_size: int = Field(default=1200, ge=200)
+    chunk_overlap: int = Field(default=150, ge=0)
+    structure: Literal["paragraph", "meeting"] = "paragraph"
+    include_title: bool = False
+
+    # 跨字段校验
+    @model_validator(mode="after")
+    def check_policy(self) -> "ChunkPolicy":
+        if self.chunk_overlap >= self.chunk_size:
+            raise ValueError("重叠长度必须小于切分长度")
+        if self.strategy == "recursive" and self.chunk_overlap != 0:
+            raise ValueError("递归切分的 chunk_overlap 必须为 0")
+        if self.structure == "meeting" and self.strategy != "recursive":
+            raise ValueError("meeting 结构需要使用 recursive 切分")
+        return self

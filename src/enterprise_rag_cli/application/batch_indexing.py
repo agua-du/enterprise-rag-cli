@@ -33,6 +33,8 @@ from enterprise_rag_cli.infrastructure.vector_store import (
     create_milvus_client,
     upsert_chunks,
 )
+from enterprise_rag_cli.application.chunk_policies import load_chunk_policies, split_with_policy
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,10 +90,8 @@ def prepare_full_index(
     if document_count == 0:
         raise ValueError("PostgreSQL 中没有可以建立索引的文档")
 
-    chunker = create_chunker(
-        settings.chunk_size,
-        settings.chunk_overlap,
-    )
+    policies = load_chunk_policies(settings.chunk_policies_path)
+
 
     def chunks():
         # 读取数据库中文档
@@ -101,7 +101,9 @@ def prepare_full_index(
         )
         # 分成Chunk
         for document in documents:
-            yield from split_document(document, chunker)
+            policy = policies.get(document.source_type, policies["default"])
+            yield from split_with_policy(document, policy)
+
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     run_id = f"{timestamp}-{uuid4().hex[:8]}"
@@ -136,6 +138,9 @@ def prepare_full_index(
             }
             for shard in shards
         ],
+    }
+    manifest["chunk_policies"] = {
+        source: policy.model_dump() for source, policy in policies.items()
     }
     _save_manifest(settings, run_id, manifest)
 
