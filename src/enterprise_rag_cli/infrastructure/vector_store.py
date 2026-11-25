@@ -127,9 +127,10 @@ def search_chunks(
     collection_name: str,
     query_vector: list[float],
     top_k: int,
+    ef: int = 64,
 ) -> list[RetrievalResult]:
-    # 加载集合
-    client.load_collection(collection_name=collection_name)
+    if not 1 <= top_k <= ef <= 32768:
+        raise ValueError("参数需要满足 1 <= top_k <= ef <= 32768")
 
     search_results = client.search(
         collection_name=collection_name,
@@ -143,7 +144,7 @@ def search_chunks(
             # 使用余弦相似度查找
             "metric_type": "COSINE",
             # HNSW搜索参数，ef 越大，搜索速度慢，召回率高，反之搜索快，召回率低
-            "params": {"ef": max(64, top_k)},
+            "params": {"ef": ef},
         },
         # 查询返回结果的字段
         output_fields=[

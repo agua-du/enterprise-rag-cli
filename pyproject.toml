@@ -19,8 +19,10 @@ dependencies = [
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
     "pymilvus>=3.0.2",
+    "requests>=2.34.2",
     "rich>=15.0.0",
     "sqlalchemy>=2.1.4",
+    "tenacity>=9.2.1",
     "typer>=0.27.2",
 ]
 

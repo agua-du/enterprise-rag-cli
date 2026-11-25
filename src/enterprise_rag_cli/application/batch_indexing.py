@@ -63,7 +63,14 @@ def _load_manifest(settings: Settings, run_id: str) -> dict:
     path = _manifest_path(settings, run_id)
     if not path.exists():
         raise ValueError(f"找不到全量索引任务：{run_id}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    embedding = manifest.get("embedding")
+    if embedding is not None and embedding != {
+        "model": settings.embedding_model,
+        "dimensions": settings.embedding_dimensions,
+    }:
+        raise ValueError("当前 Embedding 配置与索引任务不一致")
+    return manifest
 
 # 生成 manifest 文件
 def _save_manifest(
@@ -138,6 +145,10 @@ def prepare_full_index(
             }
             for shard in shards
         ],
+        "embedding": {
+            "model": settings.embedding_model,
+            "dimensions": settings.embedding_dimensions,
+        },
     }
     manifest["chunk_policies"] = {
         source: policy.model_dump() for source, policy in policies.items()

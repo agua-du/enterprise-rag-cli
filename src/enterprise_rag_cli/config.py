@@ -64,7 +64,12 @@ class Settings(BaseSettings):
     #裁判模型
     judge_model: str = "qwen3.8-flash"
 
+    # 文档切分策略配置文件路径
     chunk_policies_path: Path = Path("config/chunk-policies.json")
+
+    # ef
+    hnsw_ef_search: int = Field(default=64, ge=1, le=32768)
+    
 
 
 

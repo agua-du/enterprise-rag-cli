@@ -14,6 +14,9 @@ from enterprise_rag_cli.application.benchmark_report import (
     summarize_results,
     compare_benchmarks
 )
+from enterprise_rag_cli.application.retrieval_benchmark import (
+    run_retrieval_benchmark,
+)
 
 
 app = typer.Typer(help="运行评测并分析结果", no_args_is_help=True)
@@ -100,3 +103,38 @@ def compare(
         for row in rows:
             file.write(json.dumps(row, ensure_ascii=False) + "\n")
     console.print(f"比较结果：{path}")
+
+@app.command("retrieve")
+def retrieve(
+    suite: Path = typer.Option(
+        Path("benchmark/suites/dense-current"), "--suite",
+        exists=True, file_okay=False,
+    ),
+    output: Path = typer.Option(
+        Path("reports/retrieval/ef-comparison"), "--output",
+    ),
+    top_k: int = typer.Option(5, "--top-k", min=1, max=20),
+    ef: list[int] = typer.Option(
+        [32, 64, 128], "--ef", min=1, max=32768,
+        help="可重复传入，用于比较多个搜索范围",
+    ),
+) -> None:
+    """固定问题向量，比较 HNSW 搜索范围。"""
+    with console.status("正在比较向量检索结果…"):
+        rows = run_retrieval_benchmark(
+            get_settings(), suite, output, top_k, ef,
+        )
+
+    table = Table(title="向量检索评测")
+    for name in ("类型", "ef", "题数", "文档召回%", "命中率%", "MRR", "搜索毫秒"):
+        table.add_column(name)
+    for row in rows:
+        table.add_row(
+            row["question_type"], str(row["ef"]), str(row["questions"]),
+            f"{row['document_recall_pct']:.2f}",
+            f"{row['hit_rate_pct']:.2f}",
+            f"{row['mrr']:.3f}",
+            f"{row['search_ms']:.3f}",
+        )
+    console.print(table)
+    console.print(f"结果目录：{output}")

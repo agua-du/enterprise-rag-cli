@@ -145,6 +145,7 @@ def run_benchmark(
         "code_sha256": code_sha256(),
         "completed": False,
         "errors": 0,
+        "hnsw_ef_search": settings.hnsw_ef_search,
     }
     # manifest写入run.json
     write_json(output_dir / "run.json", manifest)

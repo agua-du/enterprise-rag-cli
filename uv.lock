@@ -612,8 +612,10 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pymilvus" },
+    { name = "requests" },
     { name = "rich" },
     { name = "sqlalchemy" },
+    { name = "tenacity" },
     { name = "typer" },
 ]
 
@@ -630,8 +632,10 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "pymilvus", specifier = ">=3.0.2" },
+    { name = "requests", specifier = ">=2.34.2" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "sqlalchemy", specifier = ">=2.1.4" },
+    { name = "tenacity", specifier = ">=9.2.1" },
     { name = "typer", specifier = ">=0.27.2" },
 ]
 
